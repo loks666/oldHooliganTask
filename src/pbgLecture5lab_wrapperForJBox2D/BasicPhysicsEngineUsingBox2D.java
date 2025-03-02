@@ -7,9 +7,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import org.jbox2d.collision.shapes.CircleShape;
 import org.jbox2d.common.Vec2;
-import org.jbox2d.dynamics.World;
+import org.jbox2d.dynamics.*;
 import org.jbox2d.dynamics.joints.MouseJoint;
+import org.jbox2d.dynamics.joints.RevoluteJointDef;
 
 
 public class BasicPhysicsEngineUsingBox2D {
@@ -36,27 +38,26 @@ public class BasicPhysicsEngineUsingBox2D {
     // estimate for time between two frames in seconds
     public static final float DELTA_T = DELAY / 1000.0f;
 
-
-    public static int convertWorldXtoScreenX(float worldX) {
-        return (int) (worldX / WORLD_WIDTH * SCREEN_WIDTH);
-    }
-
-    public static int convertWorldYtoScreenY(float worldY) {
-        // minus sign in here is because screen coordinates are upside down.
-        return (int) (SCREEN_HEIGHT - (worldY / WORLD_HEIGHT * SCREEN_HEIGHT));
-    }
-
     public static float convertWorldLengthToScreenLength(float worldLength) {
         return (worldLength / WORLD_WIDTH * SCREEN_WIDTH);
     }
+    // 这里修复了你的转换方法：
+    public static int convertWorldXtoScreenX(float worldX) {
+        return (int) (worldX * SCREEN_WIDTH / WORLD_WIDTH);
+    }
+
+    public static int convertWorldYtoScreenY(float worldY) {
+        return (int) (SCREEN_HEIGHT - worldY * SCREEN_HEIGHT / WORLD_HEIGHT);
+    }
 
     public static float convertScreenXtoWorldX(int screenX) {
-        return screenX * WORLD_WIDTH / SCREEN_WIDTH;
+        return (float) screenX * WORLD_WIDTH / SCREEN_WIDTH;
     }
 
     public static float convertScreenYtoWorldY(int screenY) {
-        return (SCREEN_HEIGHT - screenY) * WORLD_HEIGHT / SCREEN_HEIGHT;
+        return (float) ((SCREEN_HEIGHT - screenY) * WORLD_HEIGHT / SCREEN_HEIGHT);
     }
+
 
 
     public List<BasicParticle> particles;
@@ -65,73 +66,79 @@ public class BasicPhysicsEngineUsingBox2D {
     public List<ElasticConnector> connectors;
     public static MouseJoint mouseJointDef;
 
-    public static enum LayoutMode {CONVEX_ARENA, CONCAVE_ARENA, CONVEX_ARENA_WITH_CURVE, PINBALL_ARENA, RECTANGLE, SNOOKER_TABLE}
+    public enum LayoutMode {CONVEX_ARENA, CONCAVE_ARENA, CONVEX_ARENA_WITH_CURVE, PINBALL_ARENA, RECTANGLE, SNOOKER_TABLE}
 
-    ;
 
     public BasicPhysicsEngineUsingBox2D() {
-        world = new World(new Vec2(0, -GRAVITY));// create Box2D container for everything
+        world = new World(new Vec2(0, -GRAVITY)); // 创建 Box2D 容器
         world.setContinuousPhysics(true);
 
-        particles = new ArrayList<BasicParticle>();
-        polygons = new ArrayList<BasicPolygon>();
-        barriers = new ArrayList<AnchoredBarrier>();
-        connectors = new ArrayList<ElasticConnector>();
+        particles = new ArrayList<>();
+        polygons = new ArrayList<>();
+        barriers = new ArrayList<>();
+        connectors = new ArrayList<>();
+
+        // 设置小球参数
+        float linearDragForce = .02f; // 空气阻力
+        float r = .3f; // 小球半径
+        // 假设线段在以下位置
+        float groundX = WORLD_WIDTH / 2;    // 水平居中
+        float groundY = WORLD_HEIGHT / 3;    // 地面线段的位置
+        float blockWidth = 0.5f;             // 积木块宽度，根据需求调整
+
+        createRectangleBlocks(blockWidth, groundX, groundY);
+//        particles.add(new BasicParticle(WORLD_WIDTH / 2, WORLD_HEIGHT / 2 + 1, 0f, 0f, r, Color.GREEN, 1, linearDragForce));
+
+
         LayoutMode layout = LayoutMode.CONVEX_ARENA;
-        // pinball:
-        float linearDragForce = .02f;
-        float r = .3f;
-//			rectangles.add(new BasicRectangle(WORLD_WIDTH/2,WORLD_HEIGHT*3/4,  -4,3, r*4, r*8, 0, 5,  false, Color.BLUE, 1,0.5));
-//			public BasicRectangle(double sx, double sy, double vx, double vy, double width, double height, double orientation, double angularVeloctiy, boolean improvedEuler, Color col, double mass) {
 
-        float s = 1.2f;
-        particles.add(new BasicParticle(WORLD_WIDTH / 2 - 2, WORLD_HEIGHT / 2 - 2.2f, 1.5f * s, 1.2f * s, r, Color.GREEN, 1, linearDragForce));
-        polygons.add(new BasicPolygon(WORLD_WIDTH / 2 - 2, WORLD_HEIGHT / 2 + 1.4f, -1.5f * s, 1.2f * s, r * 2, Color.RED, 1, linearDragForce, 3));
-        polygons.add(new BasicPolygon(WORLD_WIDTH / 2 - 2, WORLD_HEIGHT / 2 + 1.4f, -1.5f * s, 1.2f * s, r * 4, Color.RED, 1, linearDragForce, 3));
-        polygons.add(new BasicPolygon(WORLD_WIDTH / 2 - 2, WORLD_HEIGHT / 2 + 1.3f, -1.2f * s, 1.2f * s, r * 2, Color.WHITE, 1, linearDragForce, 5));
-        polygons.add(new BasicPolygon(WORLD_WIDTH / 2 - 2, WORLD_HEIGHT / 2 + 1.3f, 1.2f * s, 1.2f * s, r * 2, Color.YELLOW, 1, linearDragForce, 4));
-
-//		particles.add(new BasicParticle(WORLD_WIDTH/2+2,WORLD_HEIGHT/2+2f,-1.2f*s,-1.4f*s, r,Color.BLUE, 2, 0));
-//		particles.add(new BasicParticle(3*r+WORLD_WIDTH/2,WORLD_HEIGHT/2,2,6.7f, r*3,Color.BLUE, 90, 0));
-//		particles.add(new BasicParticle(r+WORLD_WIDTH/2,WORLD_HEIGHT/2,3.5f,5.2f, r,Color.RED, 2, 0));
-
-//		// Example revolute joint creation:
-//		BasicPolygon p1 = polygons.get(0);
-//		BasicParticle p2 = particles.get(0);
-//		RevoluteJointDef jointDef=new RevoluteJointDef();
-//		jointDef.bodyA = p1.body;
-//		jointDef.bodyB = p2.body;
-//		jointDef.collideConnected = false;  // this means we don't want these two connected bodies to have collision detection.
-//		jointDef.localAnchorA=new Vec2(0.2f,0.2f);
-//		jointDef.localAnchorB=new Vec2(-0.2f,-0.2f);
-//		world.createJoint(jointDef);
-//		
-
-
-        if (false) {
+//        float s = 1.2f;
+//        particles.add(new BasicParticle(WORLD_WIDTH / 2 - 2, WORLD_HEIGHT / 2 - 2.2f, 1.5f * s, 1.2f * s, r, Color.GREEN, 1, linearDragForce));
+//        polygons.add(new BasicPolygon(WORLD_WIDTH / 2 - 2, WORLD_HEIGHT / 2 + 1.4f, -1.5f * s, 1.2f * s, r * 2, Color.RED, 1, linearDragForce, 3));
+//        polygons.add(new BasicPolygon(WORLD_WIDTH / 2 - 2, WORLD_HEIGHT / 2 + 1.4f, -1.5f * s, 1.2f * s, r * 4, Color.RED, 1, linearDragForce, 3));
+//        polygons.add(new BasicPolygon(WORLD_WIDTH / 2 - 2, WORLD_HEIGHT / 2 + 1.3f, -1.2f * s, 1.2f * s, r * 2, Color.WHITE, 1, linearDragForce, 5));
+//        polygons.add(new BasicPolygon(WORLD_WIDTH / 2 - 2, WORLD_HEIGHT / 2 + 1.3f, 1.2f * s, 1.2f * s, r * 2, Color.YELLOW, 1, linearDragForce, 4));
+//
+//        particles.add(new BasicParticle(WORLD_WIDTH / 2 + 2, WORLD_HEIGHT / 2 + 2f, -1.2f * s, -1.4f * s, r, Color.BLUE, 2, 0));
+//        particles.add(new BasicParticle(3 * r + WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 2, 6.7f, r * 3, Color.BLUE, 90, 0));
+//        particles.add(new BasicParticle(r + WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 3.5f, 5.2f, r, Color.RED, 2, 0));
+//
+////		// Example revolute joint creation:
+//        BasicPolygon p1 = polygons.get(0);
+//        BasicParticle p2 = particles.get(0);
+//        RevoluteJointDef jointDef = new RevoluteJointDef();
+//        jointDef.bodyA = p1.body;
+//        jointDef.bodyB = p2.body;
+//        jointDef.collideConnected = false;  // this means we don't want these two connected bodies to have collision detection.
+//        jointDef.localAnchorA = new Vec2(0.2f, 0.2f);
+//        jointDef.localAnchorB = new Vec2(-0.2f, -0.2f);
+//        world.createJoint(jointDef);
+//
+        int model = 0;
+        if (model == 1) {
             // spaceship flying under gravity
             particles.add(new ControllableSpaceShip(3 * r + WORLD_WIDTH / 2 + 1, WORLD_HEIGHT / 2 - 2, 0f, 2f, r, true, 2 * 4));
-        } else if (false) {
+        } else if (model == 2) {
             // spaceship flying with dangling pendulum
             float springConstant = 1000000, springDampingConstant = 1000;
             float hookesLawTruncation = 0.2f;
             particles.add(new ControllableSpaceShip(3 * r + WORLD_WIDTH / 2 + 1, WORLD_HEIGHT / 2 - 2, 0f, 2f, r, true, 2 * 4));
             particles.add(new BasicParticle(3 * r + WORLD_WIDTH / 2 + 1, WORLD_HEIGHT / 2 - 4, -3f, 9.7f, r, Color.BLUE, 2 * 4, linearDragForce));
             connectors.add(new ElasticConnector(particles.get(0), particles.get(1), r * 6, springConstant, springDampingConstant, false, Color.WHITE, hookesLawTruncation));
-        } else if (false) {
+        } else if (model == 3) {
             // Simple pendulum attached under mouse pointer
             linearDragForce = .5f;
             float springConstant = 10000, springDampingConstant = 10;
-            Float hookesLawTruncation = null;
+            Float hookesLawTruncation = 0.2F;
             boolean canGoSlack = false;
             particles.add(new ParticleAttachedToMousePointer(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 0, 0, r, 10000));
             particles.add(new BasicParticle(WORLD_WIDTH / 2, WORLD_HEIGHT / 2 - 2, 0, 0, r, Color.BLUE, 2 * 4, linearDragForce));
             connectors.add(new ElasticConnector(particles.get(0), particles.get(1), r * 10, springConstant, springDampingConstant, canGoSlack, Color.WHITE, hookesLawTruncation));
-        } else if (false) {
+        } else if (model == 4) {
             // 4 link chain
             linearDragForce = 1;
             float springConstant = 1000000, springDampingConstant = 1000;
-            Float hookesLawTruncation = null;//0.2;//null;//0.2;
+            Float hookesLawTruncation = 0.2F;//0.2;//null;//0.2;
             particles.add(new ParticleAttachedToMousePointer(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 0, 0, r, 10000));
             particles.add(new BasicParticle(WORLD_WIDTH / 2, WORLD_HEIGHT / 2 - 2, 0, 0, r / 2, Color.BLUE, 2 * 4, linearDragForce));
             connectors.add(new ElasticConnector(particles.get(0), particles.get(1), r * 6, springConstant, springDampingConstant, false, Color.WHITE, hookesLawTruncation));
@@ -141,12 +148,12 @@ public class BasicPhysicsEngineUsingBox2D {
             connectors.add(new ElasticConnector(particles.get(2), particles.get(3), r * 6, springConstant, springDampingConstant, false, Color.WHITE, hookesLawTruncation));
             particles.add(new BasicParticle(WORLD_WIDTH / 2, WORLD_HEIGHT / 2 - 7, 0, 0, r / 2, Color.BLUE, 2 * 4, linearDragForce));
             connectors.add(new ElasticConnector(particles.get(3), particles.get(4), r * 6, springConstant, springDampingConstant, false, Color.WHITE, hookesLawTruncation));
-        } else if (false) {
+        } else if (model == 5) {
             // rectangle box
             linearDragForce = .1f;
             float springConstant = 1000000, springDampingConstant = 1000;
             float hookesLawTruncation = 0.2f;
-//				particles.add(new ParticleAttachedToMousePointer(WORLD_WIDTH/2,WORLD_HEIGHT/2,0,0, r/2, true, 10000));				
+//				particles.add(new ParticleAttachedToMousePointer(WORLD_WIDTH/2,WORLD_HEIGHT/2,0,0, r/2, true, 10000));
             particles.add(new BasicParticle(WORLD_WIDTH / 2, WORLD_HEIGHT / 2 - 1, 24, 34, r / 2, Color.BLUE, 2 * 4, linearDragForce));
             particles.add(new BasicParticle(WORLD_WIDTH / 2 + 0.1f, WORLD_HEIGHT / 2 - 2, 0f, 0f, r / 2, Color.BLUE, 2 * 4, linearDragForce));
             connectors.add(new ElasticConnector(particles.get(0), particles.get(1), r * 6, springConstant, springDampingConstant, false, Color.WHITE, hookesLawTruncation));
@@ -156,21 +163,21 @@ public class BasicPhysicsEngineUsingBox2D {
             connectors.add(new ElasticConnector(particles.get(2), particles.get(3), r * 6, springConstant, springDampingConstant, false, Color.WHITE, hookesLawTruncation));
             connectors.add(new ElasticConnector(particles.get(3), particles.get(0), r * 6, springConstant, springDampingConstant, false, Color.WHITE, hookesLawTruncation));
             connectors.add(new ElasticConnector(particles.get(2), particles.get(0), (float) (r * 6 * Math.sqrt(6)), springConstant, springDampingConstant, false, Color.GRAY, hookesLawTruncation));
-            connectors.add(new ElasticConnector(particles.get(1), particles.get(3), (float)  (r * 6 * Math.sqrt(6)), springConstant, springDampingConstant, false, Color.GRAY, hookesLawTruncation));
+            connectors.add(new ElasticConnector(particles.get(1), particles.get(3), (float) (r * 6 * Math.sqrt(6)), springConstant, springDampingConstant, false, Color.GRAY, hookesLawTruncation));
         }
 
 
-        if (false) {
+        if (model == 6) {
             Random x = new Random(3);
             for (int i = 0; i < 40; i++) {
                 particles.add(new BasicParticle((0.5f + 0.3f * (x.nextFloat() - .5f)) * WORLD_HEIGHT, (0.5f + 0.3f * (x.nextFloat() - .5f)) * WORLD_WIDTH, 0f, 0f, r / 2, new Color(x.nextFloat(), x.nextFloat(), x.nextFloat()), .2f, linearDragForce));
             }
         }
 
-        //particles.add(new BasicParticle(r,r,5,12, r,false, Color.GRAY, includeInbuiltCollisionDetection));
+        // particles.add(new BasicParticle(r,r,5,12, r,false, Color.GRAY, includeInbuiltCollisionDetection));
 
 
-        barriers = new ArrayList<AnchoredBarrier>();
+        barriers = new ArrayList<>();
 
         switch (layout) {
             case RECTANGLE: {
@@ -184,12 +191,22 @@ public class BasicPhysicsEngineUsingBox2D {
                 break;
             }
             case CONVEX_ARENA: {
-                // These would be better created as a JBox2D "chain" type object for efficiency and potentially better collision detection at joints.
-                barriers.add(new AnchoredBarrier_StraightLine(0, WORLD_HEIGHT / 3, WORLD_WIDTH / 2, 0, Color.WHITE));
-                barriers.add(new AnchoredBarrier_StraightLine(WORLD_WIDTH / 2, 0, WORLD_WIDTH, WORLD_HEIGHT / 3, Color.WHITE));
-                barriers.add(new AnchoredBarrier_StraightLine(WORLD_WIDTH, WORLD_HEIGHT / 3, WORLD_WIDTH, WORLD_HEIGHT, Color.WHITE));
-                barriers.add(new AnchoredBarrier_StraightLine(WORLD_WIDTH, WORLD_HEIGHT, 0, WORLD_HEIGHT, Color.WHITE));
-                barriers.add(new AnchoredBarrier_StraightLine(0, WORLD_HEIGHT, 0, WORLD_HEIGHT / 3, Color.WHITE));
+                barriers.add(new AnchoredBarrier_StraightLine(0, WORLD_HEIGHT / 3, WORLD_WIDTH / 8, WORLD_HEIGHT / 3, Color.WHITE));
+                // 创建绿色小球，位置在该线段的上方
+
+                createBall();
+                // 创建小球对象并添加到粒子列表
+
+                // 确保第二条线段的起点与第一条线段有间距，且两条线段平行
+//                float groundY = WORLD_HEIGHT / 3;
+//                float groundX = WORLD_WIDTH / 2;
+                barriers.add(new AnchoredBarrier_StraightLine(WORLD_WIDTH / 3, groundY, WORLD_WIDTH, groundY, Color.WHITE));
+                // 调用 createPyramid 方法创建金字塔，传递三个参数：层数、方块宽度、水平起始位置、地面位置
+//                createPyramid(6, 0.5f, groundY, groundX);
+
+//                barriers.add(new AnchoredBarrier_StraightLine(WORLD_WIDTH, WORLD_HEIGHT / 3, WORLD_WIDTH, WORLD_HEIGHT, Color.WHITE));
+//                barriers.add(new AnchoredBarrier_StraightLine(WORLD_WIDTH, WORLD_HEIGHT, 0, WORLD_HEIGHT, Color.WHITE));
+//                barriers.add(new AnchoredBarrier_StraightLine(0, WORLD_HEIGHT, 0, WORLD_HEIGHT / 3, Color.WHITE));
                 break;
             }
             case CONCAVE_ARENA: {
@@ -250,6 +267,78 @@ public class BasicPhysicsEngineUsingBox2D {
             }
         }
     }
+    // 创建金字塔积木
+    public void createPyramid(int layers, float blockWidth, float groundX, float groundY) {
+        Color[] colors = {Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN, Color.CYAN, Color.BLUE, Color.MAGENTA};
+        float epsilon = 0.01f; //防止重叠误差
+
+        for (int i = 0; i < layers; i++) {
+            // 计算当前层的方块数量 (底层最多)
+            int blocksInThisLayer = layers - i;
+
+            // 每一层方块中心的垂直位置
+            float centerY = groundY + blockWidth / 2 + (blockWidth + epsilon) * i;
+
+            // 每层第一个方块的X坐标（严格居中）
+            float startX = groundX - ((blocksInThisLayer - 1) * (blockWidth + epsilon)) / 2;
+
+            for (int j = 0; j < blocksInThisLayer; j++) {
+                float blockX = startX + j * (blockWidth + epsilon);
+
+                // 创建方块（角度应确保为0）
+                polygons.add(new BasicPolygon(
+                        blockX, centerY,
+                        0, 0,
+                        blockWidth, colors[(i + j) % colors.length],
+                        1.0f, 0.1f, 4));
+            }
+
+            // 每一层的垂直位置更新（从地面往上叠）
+            groundY += blockWidth + epsilon;
+        }
+    }
+
+    public void createRectangleBlocks(float blockWidth, float groundX, float groundY) {
+        Color[] colors = new Color[]{Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN, Color.CYAN, Color.BLUE, Color.MAGENTA};
+        float epsilon = 0.01f; // 防止重叠误差
+
+        int rows = 3;
+        int cols = 3;
+
+        // 底部中心坐标
+        float startX = groundX - (cols - 1) * (blockWidth + epsilon) / 2;
+        float startY = groundY + blockWidth / 2 + epsilon;
+
+        for (int i = 0; i < rows; i++) {
+            float centerY = groundY + (blockWidth + epsilon) * (0.5f + i);
+            for (int j = 0; j < cols; j++) {
+                float centerX = groundX + (blockWidth + epsilon) * (j - (cols - 1) / 2.0f);
+
+                // 创建积木块
+                polygons.add(new BasicPolygon(
+                        centerX,
+                        centerY,
+                        0, 0,
+                        blockWidth,
+                        colors[(i * cols + j) % colors.length],
+                        1.0f, 0.1f, 4));
+            }
+        }
+    }
+
+
+
+
+
+
+
+    public void createBall() {
+        float ballRadius = 0.3f; // 小球的半径
+        float ballX = WORLD_WIDTH / 16; // 小球的水平位置，选择在第一条线段的中间
+        float ballY = (WORLD_HEIGHT / 3) + ballRadius + 0.1f; // 小球的垂直位置，略高于线段
+        particles.add(new BasicParticle(ballX, ballY, 0, 0, ballRadius, Color.GREEN, 1, 0.1f));
+    }
+
 
     private void createCushion(List<AnchoredBarrier> barriers, float centrex, float centrey, double orientation, float cushionLength, float cushionDepth) {
         // on entry, we require centrex,centrey to be the centre of the rectangle that contains the cushion.
@@ -263,9 +352,9 @@ public class BasicPhysicsEngineUsingBox2D {
         p3 = rotateVec(p3, orientation);
         p4 = rotateVec(p4, orientation);
         // we are being careful here to list edges in an anticlockwise manner, so that normals point inwards!
-        barriers.add(new AnchoredBarrier_StraightLine((float) (centrex + p1.x), (float) (centrey + p1.y), (float) (centrex + p2.x), (float) (centrey + p2.y), col));
-        barriers.add(new AnchoredBarrier_StraightLine((float) (centrex + p2.x), (float) (centrey + p2.y), (float) (centrex + p3.x), (float) (centrey + p3.y), col));
-        barriers.add(new AnchoredBarrier_StraightLine((float) (centrex + p3.x), (float) (centrey + p3.y), (float) (centrex + p4.x), (float) (centrey + p4.y), col));
+//        barriers.add(new AnchoredBarrier_StraightLine((float) (centrex + p1.x), (float) (centrey + p1.y), (float) (centrex + p2.x), (float) (centrey + p2.y), col));
+//        barriers.add(new AnchoredBarrier_StraightLine((float) (centrex + p2.x), (float) (centrey + p2.y), (float) (centrex + p3.x), (float) (centrey + p3.y), col));
+//        barriers.add(new AnchoredBarrier_StraightLine((float) (centrex + p3.x), (float) (centrey + p3.y), (float) (centrex + p4.x), (float) (centrey + p4.y), col));
         // oops this will have concave corners so will need to fix that some time!
     }
 
