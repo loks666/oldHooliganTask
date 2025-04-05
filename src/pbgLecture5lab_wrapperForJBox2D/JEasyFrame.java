@@ -13,7 +13,10 @@ public class JEasyFrame extends JFrame {
 		super(title);
 		this.comp = comp;
 		getContentPane().add(BorderLayout.CENTER, comp);
+		setResizable(false);  // 禁止调整窗口大小
 		pack();
+		setLocationRelativeTo(null);  // 使窗口在屏幕中央显示
+		setExtendedState(JFrame.NORMAL);  // 确保窗口以正常大小显示
 		this.setVisible(true);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		repaint();
