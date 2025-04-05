@@ -1,53 +1,67 @@
 package pbgLecture5lab_wrapperForJBox2D;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 
-import javax.swing.JComponent;
+import java.awt.*;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseMotionListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import javax.imageio.ImageIO;
+import javax.swing.*;
 
 public class BasicView extends JComponent {
-	/* Author: Michael Fairbank
-	 * Creation Date: 2016-01-28
-	 * Significant changes applied:
-	 */
-	// background colour
-	public static final Color BG_COLOR = Color.BLACK;
-
 	private BasicPhysicsEngineUsingBox2D game;
+	private BufferedImage backgroundImg;
 
 	public BasicView(BasicPhysicsEngineUsingBox2D game) {
 		this.game = game;
-	}
-	
-	@Override
-	public void paintComponent(Graphics g0) {
-		BasicPhysicsEngineUsingBox2D game;
-		synchronized(this) {
-			game=this.game;
+		try {
+			// 加载背景图片，使用相对路径
+			backgroundImg = ImageIO.read(new File("resources/imgs/background/background.png"));
+		} catch (IOException e) {
+			System.err.println("无法加载背景图片：" + e.getMessage());
 		}
-		Graphics2D g = (Graphics2D) g0;
-		// paint the background
-		g.setColor(BG_COLOR);
-		g.fillRect(0, 0, getWidth(), getHeight());
-		
-		for (BasicParticle p : game.particles)
-			p.draw(g);
-		for (BasicPolygon p : game.polygons)
-			p.draw(g);		
-		for (ElasticConnector c : game.connectors)
-			c.draw(g);
-		for (AnchoredBarrier b : game.barriers)
-			b.draw(g);
+		setOpaque(true);
+		setBackground(Color.BLACK); // 如果背景图加载失败，使用黑色背景
 	}
 
 	@Override
-	public Dimension getPreferredSize() {
-		return BasicPhysicsEngineUsingBox2D.FRAME_SIZE;
+	protected void paintComponent(Graphics g) {
+		super.paintComponent(g);
+		Graphics2D g2 = (Graphics2D) g;
+
+		// 1) 先绘制背景
+		if (backgroundImg != null) {
+			// 拉伸或平铺至整个窗口
+			g2.drawImage(backgroundImg, 0, 0, getWidth(), getHeight(), null);
+		} else {
+			// 如果背景图没加载到，则用纯色底色
+			g2.setColor(Color.BLACK);
+			g2.fillRect(0, 0, getWidth(), getHeight());
+		}
+
+		// 2) 再绘制物理世界里的各种对象
+		for (BasicParticle p : game.particles) {
+			p.draw(g2);
+		}
+		for (BasicPolygon poly : game.polygons) {
+			poly.draw(g2);
+		}
+		// 如果有其他对象（比如小猪、弹弓等），也要在这里依次绘制
+		// ...
 	}
-	
-	public synchronized void updateGame(BasicPhysicsEngineUsingBox2D game) {
-		this.game=game;
+
+	public void addKeyListener(KeyListener listener) {
+		super.addKeyListener(listener);
+	}
+
+	public void addMouseMotionListener(MouseMotionListener listener) {
+		super.addMouseMotionListener(listener);
+	}
+
+	public void updateGame(BasicPhysicsEngineUsingBox2D newGame) {
+		this.game = newGame;  // 更新游戏对象
+		this.repaint();  // 更新视图
 	}
 }
