@@ -14,8 +14,6 @@ public class JEasyFrame extends JFrame {
 		this.comp = comp;
 		getContentPane().add(BorderLayout.CENTER, comp);
 		pack();
-		setResizable(false);  // 禁止调整窗口大小
-		setLocationRelativeTo(null);  // 使窗口在屏幕中央显示
 		this.setVisible(true);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		repaint();

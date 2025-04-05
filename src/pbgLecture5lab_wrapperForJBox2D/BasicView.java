@@ -22,13 +22,6 @@ public class BasicView extends JComponent {
 		} catch (IOException e) {
 			System.err.println("无法加载背景图片：" + e.getMessage());
 		}
-		
-		// 设置固定大小的画布
-		Dimension size = new Dimension(800, 600);  // 设置画布大小为 800x600
-		setPreferredSize(size);
-		setMinimumSize(size);
-		setMaximumSize(size);
-		
 		setOpaque(true);
 		setBackground(Color.BLACK); // 如果背景图加载失败，使用黑色背景
 	}
