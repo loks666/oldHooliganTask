@@ -71,13 +71,13 @@ public class Pig extends BasicPolygon {
         
         AffineTransform old = g.getTransform();
         g.translate(centerX, centerY);
-        g.scale(1.0, -1.0);  // 翻转坐标系
-        g.rotate(angle);
+        g.rotate(angle);      // 先旋转
+        g.scale(1.0, -1.0);  // 再翻转Y轴
+        g.rotate(Math.PI);   // 最后旋转180度
         
         // 绘制木头方块
         if (blockImg != null) {
             g.drawImage(blockImg, -half, -half, size, size, null);
-            System.out.println("正在绘制木头方块，位置：(" + centerX + ", " + centerY + "), 大小：" + size);
         } else {
             System.out.println("图片为空，使用默认绘制");
             super.draw(g);  // 如果图片加载失败，使用默认的多边形绘制
