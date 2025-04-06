@@ -18,7 +18,7 @@ public class AngryBird extends BasicParticle {
     }
 
     public AngryBird(float sx, float sy, float vx, float vy, float radius) {
-        super(sx, sy, vx, vy, radius, Color.RED, 1.0f, 0.1f);
+        super(sx, sy, vx * 1.5f, vy * 1.5f, radius, Color.RED, 2.0f, 0.1f);
     }
 
     @Override

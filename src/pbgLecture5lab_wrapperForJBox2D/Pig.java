@@ -32,8 +32,8 @@ public class Pig extends BasicPolygon {
     }
 
     public Pig(float sx, float sy, float vx, float vy, float radius) {
-        // 使用与黄色方块相同的物理属性
-        super(sx, sy, vx, vy, radius, Color.YELLOW, 1.0f, 0.1f, 4);
+        // 减小密度和摩擦力，使方块更容易被撞击
+        super(sx, sy, vx, vy, radius, Color.YELLOW, 0.1f, 0.05f, 4);
         // 设置初始状态为静止
         body.setType(org.jbox2d.dynamics.BodyType.STATIC);
     }
@@ -51,6 +51,10 @@ public class Pig extends BasicPolygon {
             isActivated = true;
             // 改变物体类型为动态，开始物理模拟
             body.setType(org.jbox2d.dynamics.BodyType.DYNAMIC);
+            // 给一个小的随机初速度，使碰撞更自然
+            float randomVx = (float)(Math.random() * 2 - 1);  // -1 到 1 之间的随机值
+            float randomVy = (float)(Math.random() * 2);      // 0 到 2 之间的随机值
+            body.setLinearVelocity(new Vec2(randomVx, randomVy));
         }
     }
 

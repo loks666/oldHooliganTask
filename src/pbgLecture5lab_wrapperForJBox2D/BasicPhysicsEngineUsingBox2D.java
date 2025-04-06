@@ -305,18 +305,11 @@ public class BasicPhysicsEngineUsingBox2D {
         float gap = 0.3f;     // 间距
 
         float groundY = startY - rows * (blockHeight + gap) - gap;  // 地面的Y坐标
-        float leftX = startX - gap;                                 // 左墙的X坐标
-        float rightX = startX + cols * (blockWidth + gap) + gap;    // 右墙的X坐标
-        float wallHeight = startY + blockHeight;                    // 墙的高度
+        float leftX = startX - gap;                                 // 左边界的X坐标
+        float rightX = startX + cols * (blockWidth + gap) + gap;    // 右边界的X坐标
 
-        // 创建地面
+        // 只创建地面
         barriers.add(new AnchoredBarrier_StraightLine(leftX, groundY, rightX, groundY, Color.WHITE));
-        
-        // 创建左墙
-        barriers.add(new AnchoredBarrier_StraightLine(leftX, groundY, leftX, wallHeight, Color.WHITE));
-        
-        // 创建右墙
-        barriers.add(new AnchoredBarrier_StraightLine(rightX, groundY, rightX, wallHeight, Color.WHITE));
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
@@ -416,6 +409,7 @@ public class BasicPhysicsEngineUsingBox2D {
     private void checkBirdPigCollision(AngryBird bird) {
         Vec2 birdPos = bird.getBody().getPosition();
         boolean hasCollision = false;
+        Pig collidedPig = null;
         
         for (BasicPolygon polygon : polygons) {
             if (polygon instanceof Pig) {
@@ -425,23 +419,34 @@ public class BasicPhysicsEngineUsingBox2D {
                     float distance = pigPos.sub(birdPos).length();
                     
                     // 如果距离小于两者半径之和，说明发生碰撞
-                    if (distance < 1.0f) {  // 这里的1.0f是碰撞检测的阈值，可以根据需要调整
+                    if (distance < 2.0f) {  // 增大碰撞检测的阈值
                         hasCollision = true;
+                        collidedPig = pig;
                         break;
                     }
                 }
             }
         }
 
-        // 如果发生了碰撞，激活所有方块
-        if (hasCollision) {
+        // 如果发生了碰撞，激活被撞击的方块及其周围的方块
+        if (hasCollision && collidedPig != null) {
+            Vec2 collidedPos = collidedPig.getBody().getPosition();
+            
             for (BasicPolygon polygon : polygons) {
                 if (polygon instanceof Pig) {
                     Pig pig = (Pig)polygon;
-                    pig.activate();
+                    if (!pig.isDestroyed()) {
+                        Vec2 pigPos = pig.getBody().getPosition();
+                        float distance = pigPos.sub(collidedPos).length();
+                        
+                        // 激活被撞击的方块和附近的方块
+                        if (distance < 3.0f) {  // 设置连锁反应的范围
+                            pig.activate();
+                        }
+                    }
                 }
             }
-            System.out.println("小鸟击中了方块，所有方块开始运动！");
+            System.out.println("小鸟击中了方块，开始连锁反应！");
         }
     }
 
