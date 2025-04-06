@@ -30,7 +30,7 @@ public class BasicPolygon {
 	public final Color col;
 	protected final Body body;
 	private final Path2D.Float polygonPath;
-	private final float radius;
+	protected final float radius;
 
 	public BasicPolygon(float sx, float sy, float vx, float vy, float radius, Color col, float mass, float linearDragForce, int numSides) {
 		this(sx, sy, vx, vy, radius, col, mass, linearDragForce, mkRegularPolygon(numSides, radius), numSides);
@@ -128,5 +128,9 @@ public class BasicPolygon {
 
     public Path2D.Float getPolygonPath() {
         return polygonPath;
+    }
+
+    public Body getBody() {
+        return body;
     }
 }

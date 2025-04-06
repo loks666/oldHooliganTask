@@ -6,12 +6,9 @@ import java.awt.Toolkit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
-import org.jbox2d.collision.shapes.CircleShape;
 import org.jbox2d.common.Vec2;
 import org.jbox2d.dynamics.*;
 import org.jbox2d.dynamics.joints.MouseJoint;
-import org.jbox2d.dynamics.joints.RevoluteJointDef;
 
 
 public class BasicPhysicsEngineUsingBox2D {
@@ -86,7 +83,7 @@ public class BasicPhysicsEngineUsingBox2D {
         float groundY = WORLD_HEIGHT / 3;    // 地面线段的位置
         float blockWidth = 0.5f;             // 积木块宽度，根据需求调整
 
-        createRectangleBlocks(blockWidth, groundX, groundY);
+        createRectangleBlocks();
 //        particles.add(new BasicParticle(WORLD_WIDTH / 2, WORLD_HEIGHT / 2 + 1, 0f, 0f, r, Color.GREEN, 1, linearDragForce));
 
 
@@ -298,30 +295,36 @@ public class BasicPhysicsEngineUsingBox2D {
         }
     }
 
-    public void createRectangleBlocks(float blockWidth, float groundX, float groundY) {
-        Color[] colors = new Color[]{Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN, Color.CYAN, Color.BLUE, Color.MAGENTA};
-        float epsilon = 0.01f; // 防止重叠误差
-
+    private void createRectangleBlocks() {
+        float blockWidth = 0.8f;  // 方块的尺寸
+        float blockHeight = 0.8f;
         int rows = 3;
-        int cols = 3;
+        int cols = 3;  // 改为3列
+        float startX = 8.0f;  // 起始位置
+        float startY = 5.0f;  // 高度
+        float gap = 0.3f;     // 间距
 
-        // 底部中心坐标
-        float startX = groundX - (cols - 1) * (blockWidth + epsilon) / 2;
-        float startY = groundY + blockWidth / 2 + epsilon;
+        float groundY = startY - rows * (blockHeight + gap) - gap;  // 地面的Y坐标
+        float leftX = startX - gap;                                 // 左墙的X坐标
+        float rightX = startX + cols * (blockWidth + gap) + gap;    // 右墙的X坐标
+        float wallHeight = startY + blockHeight;                    // 墙的高度
+
+        // 创建地面
+        barriers.add(new AnchoredBarrier_StraightLine(leftX, groundY, rightX, groundY, Color.WHITE));
+        
+        // 创建左墙
+        barriers.add(new AnchoredBarrier_StraightLine(leftX, groundY, leftX, wallHeight, Color.WHITE));
+        
+        // 创建右墙
+        barriers.add(new AnchoredBarrier_StraightLine(rightX, groundY, rightX, wallHeight, Color.WHITE));
 
         for (int i = 0; i < rows; i++) {
-            float centerY = groundY + (blockWidth + epsilon) * (0.5f + i);
             for (int j = 0; j < cols; j++) {
-                float centerX = groundX + (blockWidth + epsilon) * (j - (cols - 1) / 2.0f);
-
-                // 创建积木块
-                polygons.add(new BasicPolygon(
-                        centerX,
-                        centerY,
-                        0, 0,
-                        blockWidth,
-                        colors[(i * cols + j) % colors.length],
-                        1.0f, 0.1f, 4));
+                float centerX = startX + j * (blockWidth + gap);
+                float centerY = startY - i * (blockHeight + gap);
+                
+                // 创建小猪
+                polygons.add(new Pig(centerX, centerY, 0, 0, blockWidth/2));
             }
         }
     }
@@ -336,7 +339,7 @@ public class BasicPhysicsEngineUsingBox2D {
         float ballRadius = 0.3f; // 小球的半径
         float ballX = WORLD_WIDTH / 16; // 小球的水平位置，选择在第一条线段的中间
         float ballY = (WORLD_HEIGHT / 3) + ballRadius + 0.1f; // 小球的垂直位置，略高于线段
-        particles.add(new BasicParticle(ballX, ballY, 0, 0, ballRadius, Color.GREEN, 1, 0.1f));
+        particles.add(new AngryBird(ballX, ballY, 0, 0, ballRadius));
     }
 
 
@@ -397,6 +400,11 @@ public class BasicPhysicsEngineUsingBox2D {
         for (BasicParticle p : particles) {
             // give the objects an opportunity to add any bespoke forces, e.g. drag forces
             p.notificationOfNewTimestep();
+            
+            // 检查小鸟和小猪的碰撞
+            if (p instanceof AngryBird) {
+                checkBirdPigCollision((AngryBird)p);
+            }
         }
         for (BasicPolygon p : polygons) {
             // give the objects an opportunity to add any bespoke forces, e.g. drag forces
@@ -405,7 +413,39 @@ public class BasicPhysicsEngineUsingBox2D {
         world.step(DELTA_T, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
     }
 
+    private void checkBirdPigCollision(AngryBird bird) {
+        Vec2 birdPos = bird.getBody().getPosition();
+        boolean hasCollision = false;
+        
+        for (BasicPolygon polygon : polygons) {
+            if (polygon instanceof Pig) {
+                Pig pig = (Pig)polygon;
+                if (!pig.isDestroyed()) {
+                    Vec2 pigPos = pig.getBody().getPosition();
+                    float distance = pigPos.sub(birdPos).length();
+                    
+                    // 如果距离小于两者半径之和，说明发生碰撞
+                    if (distance < 1.0f) {  // 这里的1.0f是碰撞检测的阈值，可以根据需要调整
+                        hasCollision = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 如果发生了碰撞，激活所有方块
+        if (hasCollision) {
+            for (BasicPolygon polygon : polygons) {
+                if (polygon instanceof Pig) {
+                    Pig pig = (Pig)polygon;
+                    pig.activate();
+                }
+            }
+            System.out.println("小鸟击中了方块，所有方块开始运动！");
+        }
+    }
 
 }
+
 
 

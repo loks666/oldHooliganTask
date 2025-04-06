@@ -77,4 +77,8 @@ public class BasicParticle {
 			body.applyForceToCenter(dragForce);
 		}
 	}
+
+	public Body getBody() {
+		return body;
+	}
 }
