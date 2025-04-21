@@ -338,20 +338,24 @@ public class BasicPhysicsEngineUsingBox2D {
         int rows = 3;
         int cols = 3; // 改为3列
         float startX = 8.0f; // 起始位置
-        float startY = 5.0f; // 高度
         float gap = 0.3f; // 间距
 
-        float groundY = startY - rows * (blockHeight + gap) - gap; // 地面的Y坐标
-        float leftX = startX - gap; // 左边界的X坐标
-        float rightX = startX + cols * (blockWidth + gap) + gap; // 右边界的X坐标
+        // 首先确定地面的位置 - 提高地面高度，确保所有方块都在白线上方
+        float groundY = 4.0f; // 将地面位置从2.0f提高到4.0f
+        float leftX = startX - gap * 2; // 左边界的X坐标
+        float rightX = startX + cols * (blockWidth + gap) + gap * 2; // 右边界的X坐标
 
-        // 只创建地面
+        // 创建地面
         barriers.add(new AnchoredBarrier_StraightLine(leftX, groundY, rightX, groundY, Color.WHITE));
+
+        // 从地面开始往上设置方块，使得底层方块正好放在地面上
+        // 底层方块的Y坐标是地面加上方块高度的一半
+        float startY = groundY + blockHeight / 2;
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 float centerX = startX + j * (blockWidth + gap);
-                float centerY = startY - i * (blockHeight + gap);
+                float centerY = startY + i * (blockHeight + gap); // 注意这里是加号，因为我们从底部往上搭建
 
                 // 创建小猪
                 polygons.add(new Pig(centerX, centerY, 0, 0, blockWidth / 2));
@@ -462,8 +466,9 @@ public class BasicPhysicsEngineUsingBox2D {
                     Vec2 pigPos = pig.getBody().getPosition();
                     float distance = pigPos.sub(birdPos).length();
 
-                    // 如果距离小于两者半径之和，说明发生碰撞
-                    if (distance < 2.0f) { // 增大碰撞检测的阈值
+                    // 减小碰撞检测阈值，使其更准确
+                    // 假设小鸟和小猪的半径之和大约为0.8左右，加点余量
+                    if (distance < 1.0f) { // 从2.0f改为1.0f
                         hasCollision = true;
                         collidedPig = pig;
                         break;
@@ -483,8 +488,8 @@ public class BasicPhysicsEngineUsingBox2D {
                         Vec2 pigPos = pig.getBody().getPosition();
                         float distance = pigPos.sub(collidedPos).length();
 
-                        // 激活被撞击的方块和附近的方块
-                        if (distance < 3.0f) { // 设置连锁反应的范围
+                        // 稍微减小连锁反应的范围
+                        if (distance < 2.0f) { // 从3.0f改为2.0f
                             pig.activate();
                         }
                     }
