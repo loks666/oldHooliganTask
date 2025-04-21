@@ -1,17 +1,20 @@
 package pbgLecture5lab_wrapperForJBox2D;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+
 import javax.imageio.ImageIO;
+
 import org.jbox2d.common.Vec2;
 
 public class Pig extends BasicPolygon {
-    private static BufferedImage blockImg;  // 木头方块图片
-    private boolean isDestroyed = false;   // 标记是否被摧毁
-    private boolean isActivated = false;   // 标记是否被激活（开始物理模拟）
+    private static BufferedImage blockImg; // 木头方块图片
+    private boolean isDestroyed = false; // 标记是否被摧毁
+    private boolean isActivated = false; // 标记是否被激活（开始物理模拟）
 
     static {
         try {
@@ -19,7 +22,7 @@ public class Pig extends BasicPolygon {
             File imageFile = new File(currentDir, "resources/imgs/blocks/wood_block.png");
             System.out.println("尝试加载图片：" + imageFile.getAbsolutePath());
             blockImg = ImageIO.read(imageFile);
-            
+
             if (blockImg == null) {
                 System.err.println("图片加载失败：blockImg 为 null");
             } else {
@@ -32,8 +35,9 @@ public class Pig extends BasicPolygon {
     }
 
     public Pig(float sx, float sy, float vx, float vy, float radius) {
-        // 减小密度和摩擦力，使方块更容易被撞击
-        super(sx, sy, vx, vy, radius, Color.YELLOW, 0.1f, 0.05f, 4);
+        // Increased density from 0.1f to 2.0f for more realistic mass
+        // Slightly increased friction for better interaction with the bird
+        super(sx, sy, vx, vy, radius, Color.YELLOW, 2.0f, 0.1f, 4);
         // 设置初始状态为静止
         body.setType(org.jbox2d.dynamics.BodyType.STATIC);
     }
@@ -52,8 +56,8 @@ public class Pig extends BasicPolygon {
             // 改变物体类型为动态，开始物理模拟
             body.setType(org.jbox2d.dynamics.BodyType.DYNAMIC);
             // 给一个小的随机初速度，使碰撞更自然
-            float randomVx = (float)(Math.random() * 2 - 1);  // -1 到 1 之间的随机值
-            float randomVy = (float)(Math.random() * 2);      // 0 到 2 之间的随机值
+            float randomVx = (float) (Math.random() * 2 - 1); // -1 到 1 之间的随机值
+            float randomVy = (float) (Math.random() * 2); // 0 到 2 之间的随机值
             body.setLinearVelocity(new Vec2(randomVx, randomVy));
         }
     }
@@ -61,32 +65,32 @@ public class Pig extends BasicPolygon {
     @Override
     public void draw(Graphics2D g) {
         if (isDestroyed) {
-            return;  // 如果已经被摧毁，就不绘制
+            return; // 如果已经被摧毁，就不绘制
         }
 
         Vec2 position = body.getPosition();
         float angle = body.getAngle();
-        
+
         int centerX = BasicPhysicsEngineUsingBox2D.convertWorldXtoScreenX(position.x);
         int centerY = BasicPhysicsEngineUsingBox2D.convertWorldYtoScreenY(position.y);
-        
-        int size = (int)(this.radius * 2 * this.ratioOfScreenScaleToWorldScale);
+
+        int size = (int) (this.radius * 2 * this.ratioOfScreenScaleToWorldScale);
         int half = size / 2;
-        
+
         AffineTransform old = g.getTransform();
         g.translate(centerX, centerY);
-        g.rotate(angle);      // 先旋转
-        g.scale(1.0, -1.0);  // 再翻转Y轴
-        g.rotate(Math.PI);   // 最后旋转180度
-        
+        g.rotate(angle); // 先旋转
+        g.scale(1.0, -1.0); // 再翻转Y轴
+        g.rotate(Math.PI); // 最后旋转180度
+
         // 绘制木头方块
         if (blockImg != null) {
             g.drawImage(blockImg, -half, -half, size, size, null);
         } else {
             System.out.println("图片为空，使用默认绘制");
-            super.draw(g);  // 如果图片加载失败，使用默认的多边形绘制
+            super.draw(g); // 如果图片加载失败，使用默认的多边形绘制
         }
-        
+
         g.setTransform(old);
     }
-} 
+}

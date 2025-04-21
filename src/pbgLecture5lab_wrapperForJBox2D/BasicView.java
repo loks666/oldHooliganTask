@@ -1,14 +1,17 @@
 package pbgLecture5lab_wrapperForJBox2D;
 
-
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+
 import javax.imageio.ImageIO;
-import javax.swing.*;
+import javax.swing.JComponent;
 
 public class BasicView extends JComponent {
 	private BasicPhysicsEngineUsingBox2D game;
@@ -22,14 +25,14 @@ public class BasicView extends JComponent {
 		} catch (IOException e) {
 			System.err.println("无法加载背景图片：" + e.getMessage());
 		}
-		
+
 		// 设置固定大小的画布
-		Dimension size = new Dimension(800, 600);  // 设置画布大小为 800x600
+		Dimension size = new Dimension(800, 600); // 设置画布大小为 800x600
 		setPreferredSize(size);
 		setMinimumSize(size);
 		setMaximumSize(size);
-		setSize(size);  // 直接设置大小
-		
+		setSize(size); // 直接设置大小
+
 		setOpaque(true);
 		setBackground(Color.BLACK); // 如果背景图加载失败，使用黑色背景
 	}
@@ -49,15 +52,30 @@ public class BasicView extends JComponent {
 			g2.fillRect(0, 0, getWidth(), getHeight());
 		}
 
-		// 2) 再绘制物理世界里的各种对象
-		for (BasicParticle p : game.particles) {
-			p.draw(g2);
+		// 2) 绘制障碍物
+		for (AnchoredBarrier barrier : game.barriers) {
+			barrier.draw(g2);
 		}
+
+		// 3) 绘制弹弓
+		Slingshot slingshot = game.getSlingshot();
+		if (slingshot != null) {
+			slingshot.draw(g2);
+		}
+
+		// 4) 再绘制物理世界里的各种对象
 		for (BasicPolygon poly : game.polygons) {
 			poly.draw(g2);
 		}
-		// 如果有其他对象（比如小猪、弹弓等），也要在这里依次绘制
-		// ...
+
+		for (BasicParticle p : game.particles) {
+			p.draw(g2);
+		}
+
+		// 5) 绘制连接器
+		for (ElasticConnector connector : game.connectors) {
+			connector.draw(g2);
+		}
 	}
 
 	public void addKeyListener(KeyListener listener) {
@@ -68,8 +86,12 @@ public class BasicView extends JComponent {
 		super.addMouseMotionListener(listener);
 	}
 
+	public void addMouseListener(java.awt.event.MouseListener listener) {
+		super.addMouseListener(listener);
+	}
+
 	public void updateGame(BasicPhysicsEngineUsingBox2D newGame) {
-		this.game = newGame;  // 更新游戏对象
-		this.repaint();  // 更新视图
+		this.game = newGame; // 更新游戏对象
+		this.repaint(); // 更新视图
 	}
 }

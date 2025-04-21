@@ -1,9 +1,11 @@
 package pbgLecture5lab_wrapperForJBox2D;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+
 import javax.imageio.ImageIO;
 
 public class AngryBird extends BasicParticle {
@@ -18,7 +20,7 @@ public class AngryBird extends BasicParticle {
     }
 
     public AngryBird(float sx, float sy, float vx, float vy, float radius) {
-        super(sx, sy, vx * 1.5f, vy * 1.5f, radius, Color.RED, 2.0f, 0.1f);
+        super(sx, sy, vx * 1.5f, vy * 1.5f, radius, Color.RED, 5.0f, 0.05f);
     }
 
     @Override
@@ -28,15 +30,15 @@ public class AngryBird extends BasicParticle {
         int r = SCREEN_RADIUS;
 
         if (birdImg != null) {
-            g.drawImage(birdImg, 
-                x - r, y - r,     // 左上角
-                x + r, y + r,     // 右下角
-                0, 0, 
-                birdImg.getWidth(), birdImg.getHeight(),
-                null);
+            g.drawImage(birdImg,
+                    x - r, y - r, // 左上角
+                    x + r, y + r, // 右下角
+                    0, 0,
+                    birdImg.getWidth(), birdImg.getHeight(),
+                    null);
         } else {
             g.setColor(Color.RED);
             g.fillOval(x - r, y - r, 2 * r, 2 * r);
         }
     }
-} 
+}
